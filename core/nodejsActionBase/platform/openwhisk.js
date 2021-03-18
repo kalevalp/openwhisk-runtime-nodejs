@@ -23,6 +23,7 @@ function PlatformOpenWhiskImpl(platformFactory) {
     this.registerHandlers = function(app, platform) {
         app.post('/init', platformFactory.wrapEndpoint(service.initCode));
         app.post('/run', platformFactory.wrapEndpoint(service.runCode));
+        app.post('/await', platformFactory.wrapEndpoint(service.await));
     };
 }
 

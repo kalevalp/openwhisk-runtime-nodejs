@@ -114,6 +114,8 @@ function NodeActionService(config) {
         }
     };
 
+    let terminationPromise
+
     /**
      * Returns a promise of a response to the /exec invocation.
      * Note that the promise is failed if and only if there was an unhandled error
@@ -123,6 +125,10 @@ function NodeActionService(config) {
      * req.body = { value: Object, meta { activationId : int } }
      */
     this.runCode = function runCode(req) {
+        terminationPromise = new Promise((resolve, reject) => {
+            global.terminateRun = resolve
+        })
+
         if (status === Status.ready && userCodeRunner !== undefined) {
             if (!ignoreRunStatus) {
                 setStatus(Status.running);
@@ -158,6 +164,15 @@ function NodeActionService(config) {
             return Promise.reject(errorMessage(403, msg));
         }
     };
+
+    /**
+     * Returns a promise of a response to the /await invocation.
+     */
+    this.await = function await(req) {
+        return terminationPromise
+            .then(() => writeMarkers())
+            .then(() => responseMessage(200, {message: "Returned from await!"}))
+    }
 
     function doInit(message) {
         if (message.env && typeof message.env == 'object') {
@@ -198,7 +213,7 @@ function NodeActionService(config) {
                 if (typeof result !== 'object') {
                     console.error(`Result must be of type object but has type "${typeof result}":`, result);
                 }
-                writeMarkers();
+                // writeMarkers();
                 return result;
             }).catch(error => {
                 console.error(error);
